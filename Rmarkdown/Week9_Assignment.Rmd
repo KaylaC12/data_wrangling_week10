@@ -51,6 +51,13 @@ Once you've installed `palmerpenguins`, comment out that line of code.
 
 If you haven't already, make sure you are working in an R Project. Your project should have sub-directories for raw data, clean data, output, docs, and scripts. The naming convention for these folders is up to you.
 
+```{r}
+# install.packages("palmerpenguins")
+library(tidyverse)
+library(palmerpenguins)
+penguins <- penguins
+```
+
 ### 2. Portal Data Paths Review (20 points)
 
 For this question, we are going to be using some of the code you've already written for Assignment 8, Question 2.
@@ -59,12 +66,53 @@ Click on the links below to download all 3 of the Portal files: surveys, species
 
 Then, move those three files from your Downloads folder into your equivalent of the raw data folder (yours might have a slightly different name). This assignment file should be in your scripts folder.
 
+```         
+```
+
 Now, let's begin to code!
 
 a.  Load the 3 dataframes (surveys, species, plots) into R using `read_csv()`. Make sure your paths are *relative*.
+
 b.  Copy the answers from Week 8 Assignment, Questions 2d-f, into the code chunk below.
+
 c.  Save the output of the code from 2d as a new dataframe. Then, save that resulting dataframe as a csv file in the clean data sub-directory using the `write_csv()` function.
+
 d.  Save the ggplots from 2e and 2f into the outputs folder using the `ggsave()` function.
+
+    ```{r}
+    #2a
+    surveys <- read.csv("../data_raw/surveys.csv")
+    species <- read.csv("../data_raw/species.csv")
+    plots <- read.csv("../data_raw/plots.csv")
+
+    #2b
+    # new data frame for Dipodomys
+    dipodomys <- surveys %>% 
+      inner_join(species, join_by(species_id)) %>% 
+      inner_join(plots, join_by(plot_id)) %>% 
+      filter(genus == "Dipodomys") %>% 
+      select(year, genus, species, weight, plot_type) 
+
+    # scatter plot (weight v. hindfoot length)
+    hindfoot_plot <- ggplot(surveys, mapping = aes(x = weight, y = hindfoot_length, color = species_id)) +
+      geom_point() +
+      scale_x_log10() 
+
+    # histogram of weights with separate subplots for each species 
+    surveys_filtered <- surveys %>%
+      filter(!is.na(weight))
+    weights_hist <- ggplot(surveys_filtered, mapping = aes(x = weight)) +
+      geom_histogram() +
+      facet_wrap(~ species_id, scales = "free_y")
+
+    #2c
+    write_csv(dipodomys, file = "../data_clean/dipodomys.csv")
+
+    #2d
+    ggsave("hindfoot_plot.png", plot = hindfoot_plot, path = "../outputs")
+    ggsave("weights_hist.png", plot = weights_hist, path = "../outputs")
+
+    ```
 
 ### 3. Palmer Penguins and Path Files (20 points)
 
@@ -75,20 +123,54 @@ a.  The code chunk below uses the `download.file()` function to go to a specific
 ```{r}
 # Adelie penguin data
 download.file(url = "https://portal.edirepository.org/nis/dataviewer?packageid=knb-lter-pal.219.3&entityid=002f3893385f710df69eeebe893144ff",
-              destfile = "adelie.csv")
+              destfile = "../data_raw/adelie.csv")
 
 # Gentoo penguin data
 download.file(url = "https://portal.edirepository.org/nis/dataviewer?packageid=knb-lter-pal.220.3&entityid=e03b43c924f226486f2f0ab6709d2381",
-              destfile = "gentoo.csv")
+              destfile = "../data_raw/gentoo.csv")
 
 # Chinstrap penguin data 
 download.file(url = "https://portal.edirepository.org/nis/dataviewer?packageid=knb-lter-pal.221.2&entityid=fe853aa8f7a59aa84cdd3197619ef462",
-              destfile = "chinstrap.csv")
+              destfile = "../data_raw/chinstrap.csv")
 ```
 
 b.  Copy and then run the code that you wrote to combine the three above datasets and have the output match the `penguins` dataframe from the `palmerpenguins` dataframe.
+
 c.  Run the `setdiff()` function to make sure that your code worked (it shouldn't have any issues, but it is good to check!)
+
 d.  Save your version of the cleaned penguins data into your clean data folder.
+
+    ```{r}
+    #3b
+    adelie <- read.csv("../data_raw/adelie.csv")
+    gentoo <- read.csv("../data_raw/gentoo.csv")
+    chinstrap <- read.csv("../data_raw/chinstrap.csv")
+
+    penguins_raw_2 <- bind_rows(adelie,gentoo,chinstrap) 
+    penguins_clean <- penguins_raw_2 %>%
+      separate(`Date.Egg`, c("year", "month", "day"), sep = "-") %>%
+      separate(Species, c("species", "genus"), sep = " ") %>% 
+      select(species, Island, Culmen.Length..mm., Culmen.Depth..mm., Flipper.Length..mm., Body.Mass..g., Sex, year) %>% 
+      rename(island = Island,
+             bill_length_mm = Culmen.Length..mm.,
+             bill_depth_mm = Culmen.Depth..mm.,
+             flipper_length_mm =  Flipper.Length..mm.,
+             body_mass_g = Body.Mass..g.,
+             sex = Sex) %>% 
+      mutate(sex = tolower(sex)) %>% 
+      mutate(sex = na_if(sex, ".")) %>% 
+      mutate(sex = na_if(sex, "")) %>% 
+      mutate(year = as.numeric(year))
+    penguins_clean
+
+
+    #3c
+    setdiff(penguins_clean, penguins)
+
+    #3d
+    write_csv(penguins_clean, file = "../data_clean/penguins_clean.csv")
+
+    ```
 
 ### 4. Add Version Control: Together in Class (15 points)
 
