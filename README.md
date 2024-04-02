@@ -1,2 +1,3 @@
 # data_wrangling_week10
-Repo for week 10 of data wrangling 2024
+contains data wrangling assignments 9 and 10.
+Both assignments can be found in the Rmarkdown folder.
